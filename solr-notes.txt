@@ -1,0 +1,89 @@
+What is Solr?
+    - Java
+    - Lucene
+
+- Schema
+    - Explicitly typed
+    - Generally a schema is adhered to although you can set up things like
+      "dynamic fields".
+    - Unique keys are supported
+
+- Indexing: Solr has one index (per "core"). A field can either be in the index
+  or not.  That's it!
+
+- Committing & Replication
+    - The index being queried against is never updated in place; all updates go
+      into a separate index which is then swapped in whenever a commit occurs.
+    - We auto-commit every hour or 100k updates. Each commit causes a new index
+      version which must be replicated.
+    - Our index is currently around 28G (unoptimized) and consistently takes
+      24m to replicate.
+    - "Near real-time search" is in Solr 4.0
+
+- Some queries.
+    - A random search query:
+
+      fq=gender:F
+      fq=interested_in:M
+      fq={!geofilt sfield=location}
+      pt=35.5807,139.666            // lat & long
+      d=160.9344                    // distance (km)
+
+      fl=uid                        // we only get the uid field!
+
+      sort=last_login desc
+      sort={!sfield=location}geodist() asc
+
+      rows=50
+      start=
+
+      q=date_of_birth:[NOW/DAY-25YEARS TO NOW/DAY-19YEARS]
+          AND locality_country:116
+          AND -uid:128040092
+          AND ethnicity:7
+
+    - Parts of query:
+        - fq
+        - q
+        - (fq vs q)
+
+- Caching
+    - Document cache
+      We don't use this much!
+    - Query result cache
+      Works pretty much like the one in MySQL.
+    - Filter cache
+      Stores unordered collections of doc IDs. The collections are the results
+      of filter queries applied to the entire index.
+
+How do we use Solr?
+    - Geospatial (causes our bottleneck to be CPU!)
+    - Interest matching
+    - Last login, age, etc.
+
+Our Solr stats panel
+
+Chapsky!
+
+How could we use Solr?
+    - Textual analysis tools: stemming, stop words, "sounds-like" filters
+    - Highlighting
+    - Faceting
+    - Sharding
+    
+Questions
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ vim:expandtab:shiftwidth=4:spell
