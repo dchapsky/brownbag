@@ -1,35 +1,50 @@
 What is Solr?
     - Java
     - Lucene
+        - Indexing and search library.
+        - Unified release with Solr as of v3.0.
+    - We are on version 3.5. A stable 3.6 was release 4/12. There is a
+      4.0 dev release.
+    - Servlet container: Jetty (vs. Tomcat et al)
 
 - Schema
     - Explicitly typed
-    - Generally a schema is adhered to although you can set up things like
-      "dynamic fields".
+    - Generally a strict schema is adhered to although you can set up
+      things like "dynamic fields".
+    - /solr/admin/file/?contentType=text/xml;charset=utf-8&file=schema.xml
+
+- Indexing: Solr has one index (per "core"). A field can either be in
+  the index or not.  That's it!
     - Unique keys are supported
 
-- Indexing: Solr has one index (per "core"). A field can either be in the index
-  or not.  That's it!
+- Committing
+    - The live index is never updated in place; all updates go into a
+      standby instance of the index which only becomes active when a
+      commit happens.
+    - You can commit as frequently as your needs dictate;
+      performance/replication vs. freshness of data.
+    - We auto-commit every hour or 100k updates -- effectively every 15m
+      during normal traffic.
 
-- Committing & Replication
-    - The index being queried against is never updated in place; all updates go
-      into a separate index which is then swapped in whenever a commit occurs.
-    - We auto-commit every hour or 100k updates. Each commit causes a new index
-      version which must be replicated.
-    - Our index is currently around 28G (unoptimized) and consistently takes
+- Replication
+    - We have one master, solr01, and two slaves, solr02 and 03.
+    - Our index is currently around 28G (unoptimized) and takes about
       24m to replicate.
-    - "Near real-time search" is in Solr 4.0
+    - What needs to change here?
+    - "Near real-time search" is in Solr 4.0, will allow "soft commits".
+      Hard commits will still be required periodically to ensure
+      survival of data.
 
 - Some queries.
     - A random search query:
 
       fq=gender:F
       fq=interested_in:M
-      fq={!geofilt sfield=location}
+      fq={!geofilt sfield=location} // could we use bbox instead?
       pt=35.5807,139.666            // lat & long
       d=160.9344                    // distance (km)
 
-      fl=uid                        // we only get the uid field!
+      fl=uid                        // we only ask for the uid field!
 
       sort=last_login desc
       sort={!sfield=location}geodist() asc
@@ -37,24 +52,19 @@ What is Solr?
       rows=50
       start=
 
-      q=date_of_birth:[NOW/DAY-25YEARS TO NOW/DAY-19YEARS]
+      q=date_of_birth:[NOW/DAY-25YEARS TO NOW/DAY-19YEARS] // 19-24
           AND locality_country:116
-          AND -uid:128040092
+          AND -uid:128040092       // don't include myself
           AND ethnicity:7
 
-    - Parts of query:
-        - fq
-        - q
-        - (fq vs q)
+    - fq vs q
 
 - Caching
-    - Document cache
-      We don't use this much!
-    - Query result cache
-      Works pretty much like the one in MySQL.
-    - Filter cache
-      Stores unordered collections of doc IDs. The collections are the results
-      of filter queries applied to the entire index.
+    - Document cache: we don't use this much!
+    - Query result cache: Works pretty much like the one in MySQL.
+    - Filter cache: Stores unordered collections of doc IDs. The
+      collections are the results of filter queries applied to the
+      entire index.
 
 How do we use Solr?
     - Geospatial (causes our bottleneck to be CPU!)
@@ -64,9 +74,11 @@ How do we use Solr?
 Our Solr stats panel
 
 Chapsky!
+    - https://gist.github.com/9d214312dd71d5de90f3
 
 How could we use Solr?
-    - Textual analysis tools: stemming, stop words, "sounds-like" filters
+    - Textual analysis tools: stemming, stop words, "sounds-like"
+      filters
     - Highlighting
     - Faceting
     - Sharding
@@ -86,4 +98,4 @@ Questions
 
 
 
- vim:expandtab:shiftwidth=4:spell
+ vim:expandtab:shiftwidth=4:spell:textwidth=72
