@@ -67,9 +67,9 @@ What is Solr?
       entire index.
 
 How do we use Solr?
+    - Basic user search filters -- replaces Sphinx
     - Geospatial (causes our bottleneck to be CPU!)
     - Interest matching
-    - Last login, age, etc.
 
 Our Solr stats panel
 
